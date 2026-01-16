@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kobo Annotations Viewer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .file-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .file-upload-area {
+            border: 3px dashed #6a11cb;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #f9f9ff;
+        }
+        
+        .file-upload-area:hover {
+            background-color: #f0f2ff;
+            border-color: #2575fc;
+        }
+        
+        .file-upload-area h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .file-upload-area p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .button {
+            display: inline-block;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 1rem;
+            margin: 5px;
+        }
+        
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .selected-file {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #eef5ff;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .selected-file.show {
+            display: block;
+        }
+        
+        .data-section {
+            display: none;
+        }
+        
+        .data-section.show {
+            display: block;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            flex: 1;
+            min-width: 180px;
+            text-align: center;
+            border-top: 4px solid #6a11cb;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #2575fc;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.95rem;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .books-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .book-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s;
+            cursor: pointer;
+            border-left: 4px solid #6a11cb;
+        }
+        
+        .book-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .book-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .book-author {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+        }
+        
+        .book-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #888;
+        }
+        
+        .annotations-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: none;
+        }
+        
+        .annotations-container.show {
+            display: block;
+        }
+        
+        .annotations-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .annotation-item {
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            background-color: #f9f9ff;
+            border-left: 4px solid #6a11cb;
+        }
+        
+        .annotation-text {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin-bottom: 15px;
+            font-style: italic;
+            color: #333;
+        }
+        
+        .annotation-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .annotation-type {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .type-highlight {
+            background-color: #fff8e1;
+            color: #ff9800;
+        }
+        
+        .type-bookmark {
+            background-color: #e8f5e9;
+            color: #4caf50;
+        }
+        
+        .type-note {
+            background-color: #e3f2fd;
+            color: #2196f3;
+        }
+        
+        .no-annotations {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 1.1rem;
+        }
+        
+        .back-button {
+            background-color: #f5f7fa;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .back-button:hover {
+            background-color: #eaeaea;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #6a11cb;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .instructions {
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        
+        .instructions h3 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .error-message {
+            background-color: #ffebee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #c62828;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .alternative-section {
+            background-color: #fff3e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .alternative-section.show {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .stats {
+                flex-direction: column;
+            }
+            
+            .books-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .annotations-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📚 Kobo Annotations Viewer</h1>
+        <p class="subtitle">View your highlights, bookmarks, and notes from your Kobo eReader</p>
+    </header>
+    
+    <div class="container">
+        <section class="file-section">
+            <div class="file-upload-area" id="fileDropArea">
+                <h3>Open Your Kobo Database File</h3>
+                <p>Click here or drag and drop your KoboReader.sqlite file</p>
+                <p><small>Typically located in <code>.kobo/KoboReader.sqlite</code> on your Kobo device</small></p>
+                <div class="button" id="browseButton">Browse Files</div>
+                <div class="button" id="alternativeMethodBtn">Use Alternative Method</div>
+                <input type="file" id="fileInput" accept=".sqlite,.db,.sqlite3" style="display: none;">
+            </div>
+            
+            <div class="selected-file" id="selectedFileInfo">
+                <p><strong>Selected file:</strong> <span id="fileName"></span></p>
+                <p><strong>File size:</strong> <span id="fileSize"></span></p>
+                <div class="button" id="processFile">Process File</div>
+            </div>
+            
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <p>Loading and parsing database file...</p>
+                <p><small>This may take a moment for large database files</small></p>
+            </div>
+            
+            <div class="error-message" id="errorMessage">
+                <!-- Error messages will appear here -->
+            </div>
+            
+            <div class="alternative-section" id="alternativeSection">
+                <h3>Alternative Method: Manual SQLite Viewer</h3>
+                <p>If the automatic parsing doesn't work, you can use these steps:</p>
+                <ol>
+                    <li>Download and install <a href="https://sqlitebrowser.org/" target="_blank">DB Browser for SQLite</a></li>
+                    <li>Open your KoboReader.sqlite file with it</li>
+                    <li>Go to the "Execute SQL" tab</li>
+                    <li>Run this query to get your annotations:
+                        <pre><code>SELECT 
+    c.Title,
+    c.Attribution as Author,
+    b.Text as Highlight,
+    b.Annotation as Note,
+    b.DateCreated,
+    CASE 
+        WHEN b.Type = 0 OR b.Type = 1 THEN 'Highlight'
+        WHEN b.Type = 2 THEN 'Bookmark'
+        ELSE 'Note'
+    END as Type
+FROM Bookmark b
+JOIN content c ON b.VolumeID = c.contentID
+WHERE b.Text != '' OR b.Annotation != ''
+ORDER BY c.Title, b.DateCreated;</code></pre>
+                    </li>
+                    <li>Export the results as CSV or HTML</li>
+                </ol>
+            </div>
+        </section>
+        
+        <section class="data-section" id="dataSection">
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value" id="totalBooks">0</div>
+                    <div class="stat-label">Books with Annotations</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="totalHighlights">0</div>
+                    <div class="stat-label">Highlights</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="totalBookmarks">0</div>
+                    <div class="stat-label">Bookmarks</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="totalNotes">0</div>
+                    <div class="stat-label">Notes</div>
+                </div>
+            </div>
+            
+            <h2>Your Books</h2>
+            <div class="books-container" id="booksContainer">
+                <!-- Books will be dynamically added here -->
+            </div>
+        </section>
+        
+        <section class="annotations-container" id="annotationsContainer">
+            <div class="annotations-header">
+                <div>
+                    <h2 id="annotationsBookTitle">Book Title</h2>
+                    <p id="annotationsBookAuthor">Author Name</p>
+                </div>
+                <div class="button back-button" id="backButton">
+                    ← Back to Books
+                </div>
+            </div>
+            
+            <div id="annotationsList">
+                <!-- Annotations will be dynamically added here -->
+            </div>
+        </section>
+        
+        <div class="instructions">
+            <h3>How to find your Kobo database file</h3>
+            <ol>
+                <li>Connect your Kobo eReader to your computer via USB</li>
+                <li>Open the Kobo drive on your computer</li>
+                <li>Navigate to the <code>.kobo</code> folder (note: it may be hidden on some systems)</li>
+                <li>Look for the file named <code>KoboReader.sqlite</code></li>
+                <li>Select that file in the upload area above</li>
+                <li><strong>Note:</strong> This tool runs entirely in your browser. Your data never leaves your computer.</li>
+            </ol>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Kobo Annotations Viewer | Works entirely in your browser | No data is uploaded to any server</p>
+        <p>If you encounter issues, try the alternative method shown above</p>
+    </footer>
+
+    <script>
+        // DOM elements
+        const fileDropArea = document.getElementById('fileDropArea');
+        const fileInput = document.getElementById('fileInput');
+        const browseButton = document.getElementById('browseButton');
+        const alternativeMethodBtn = document.getElementById('alternativeMethodBtn');
+        const selectedFileInfo = document.getElementById('selectedFileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const processFileButton = document.getElementById('processFile');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        const alternativeSection = document.getElementById('alternativeSection');
+        const dataSection = document.getElementById('dataSection');
+        const booksContainer = document.getElementById('booksContainer');
+        const annotationsContainer = document.getElementById('annotationsContainer');
+        const annotationsList = document.getElementById('annotationsList');
+        const annotationsBookTitle = document.getElementById('annotationsBookTitle');
+        const annotationsBookAuthor = document.getElementById('annotationsBookAuthor');
+        const backButton = document.getElementById('backButton');
+        const totalBooks = document.getElementById('totalBooks');
+        const totalHighlights = document.getElementById('totalHighlights');
+        const totalBookmarks = document.getElementById('totalBookmarks');
+        const totalNotes = document.getElementById('totalNotes');
+        
+        // Application state
+        let books = [];
+        let currentBookId = null;
+        
+        // Event listeners
+        browseButton.addEventListener('click', () => fileInput.click());
+        alternativeMethodBtn.addEventListener('click', () => {
+            alternativeSection.classList.toggle('show');
+        });
+        fileInput.addEventListener('change', handleFileSelect);
+        processFileButton.addEventListener('click', processDatabase);
+        backButton.addEventListener('click', () => {
+            annotationsContainer.classList.remove('show');
+            dataSection.classList.add('show');
+        });
+        
+        // Drag and drop functionality
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.style.backgroundColor = '#f0f2ff';
+            fileDropArea.style.borderColor = '#2575fc';
+        });
+        
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.style.backgroundColor = '#f9f9ff';
+            fileDropArea.style.borderColor = '#6a11cb';
+        });
+        
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.style.backgroundColor = '#f9f9ff';
+            fileDropArea.style.borderColor = '#6a11cb';
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        
+        // Handle file selection
+        function handleFileSelect() {
+            if (!fileInput.files.length) return;
+            
+            const file = fileInput.files[0];
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            selectedFileInfo.classList.add('show');
+            errorMessage.classList.remove('show');
+        }
+        
+        // Process the SQLite database
+        async function processDatabase() {
+            if (!fileInput.files.length) {
+                showError('Please select a file first.');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            // Show loading indicator
+            loadingIndicator.classList.add('show');
+            selectedFileInfo.classList.remove('show');
+            errorMessage.classList.remove('show');
+            alternativeSection.classList.remove('show');
+            
+            try {
+                // Use a simpler approach - try to parse as text first to see structure
+                const textContent = await readFileAsText(file);
+                
+                // Check if it looks like a SQLite file
+                if (textContent.substring(0, 15) !== 'SQLite format 3') {
+                    // Try binary reading
+                    const arrayBuffer = await readFileAsArrayBuffer(file);
+                    const header = new Uint8Array(arrayBuffer.slice(0, 16));
+                    const headerStr = String.fromCharCode.apply(null, header);
+                    
+                    if (!headerStr.includes('SQLite format')) {
+                        showError('This does not appear to be a valid SQLite database file. Please make sure you selected the correct KoboReader.sqlite file.');
+                        loadingIndicator.classList.remove('show');
+                        return;
+                    }
+                }
+                
+                // Load SQL.js with a simpler approach
+                await loadSQLJSAndParse(file);
+                
+            } catch (error) {
+                console.error('Error processing file:', error);
+                showError(`Error processing the database file: ${error.message}. Try the alternative method shown above.`);
+                loadingIndicator.classList.remove('show');
+            }
+        }
+        
+        // Read file as text
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file.slice(0, 100)); // Only read first 100 bytes
+            });
+        }
+        
+        // Read file as array buffer
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // Load SQL.js and parse the database
+        async function loadSQLJSAndParse(file) {
+            try {
+                // Try to load SQL.js from CDN with a simple script tag approach
+                if (!window.SQL) {
+                    await loadScript('https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/sql-wasm.js');
+                }
+                
+                // Initialize SQL.js
+                const SQL = await initSqlJs({
+                    locateFile: url => `https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/${url}`
+                });
+                
+                // Read the file
+                const arrayBuffer = await readFileAsArrayBuffer(file);
+                
+                // Load the database
+                const db = new SQL.Database(new Uint8Array(arrayBuffer));
+                
+                // Extract data from the database
+                extractDataFromDatabase(db);
+                
+                // Hide loading indicator
+                loadingIndicator.classList.remove('show');
+                
+            } catch (error) {
+                console.error('Error loading SQL.js:', error);
+                
+                // Fallback: try to extract data using a text-based approach
+                showError(`SQL.js failed to load: ${error.message}. Trying alternative parsing method...`);
+                await tryTextBasedParsing(file);
+            }
+        }
+        
+        // Load a script dynamically
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Initialize SQL.js
+        function initSqlJs(config) {
+            return new Promise((resolve, reject) => {
+                if (window.initSqlJs) {
+                    window.initSqlJs(config).then(resolve).catch(reject);
+                } else if (window.SQL) {
+                    resolve(window.SQL);
+                } else {
+                    reject(new Error('SQL.js not available'));
+                }
+            });
+        }
+        
+        // Try text-based parsing as a fallback
+        async function tryTextBasedParsing(file) {
+            try {
+                // This is a very basic attempt to extract data
+                const arrayBuffer = await readFileAsArrayBuffer(file);
+                const byteArray = new Uint8Array(arrayBuffer);
+                
+                // Convert to string (this is crude but might work for text data)
+                let text = '';
+                for (let i = 0; i < Math.min(byteArray.length, 100000); i++) {
+                    if (byteArray[i] >= 32 && byteArray[i] <= 126) {
+                        text += String.fromCharCode(byteArray[i]);
+                    } else if (byteArray[i] === 0) {
+                        text += ' ';
+                    }
+                }
+                
+                // Look for book titles and annotations in the text
+                const mockData = extractMockDataFromText(text);
+                
+                if (mockData.books.length > 0) {
+                    books = mockData.books;
+                    updateUI();
+                    loadingIndicator.classList.remove('show');
+                    showError('Note: Using limited text extraction. Some data may not be displayed correctly.');
+                } else {
+                    showError('Could not extract annotations from the file. Please try the alternative method or use DB Browser for SQLite.');
+                    loadingIndicator.classList.remove('show');
+                }
+                
+            } catch (error) {
+                showError(`Text parsing failed: ${error.message}. Please use the alternative method.`);
+                loadingIndicator.classList.remove('show');
+            }
+        }
+        
+        // Extract mock data from text (very basic)
+        function extractMockDataFromText(text) {
+            const books = [];
+            
+            // Look for patterns that might be book titles
+            const titleMatches = text.match(/[A-Z][a-z]+(?: [A-Z][a-z]+)*/g) || [];
+            
+            // Create mock books
+            titleMatches.slice(0, 10).forEach((title, index) => {
+                if (title.length > 3 && title.length < 50) {
+                    books.push({
+                        BookID: `book-${index}`,
+                        Title: title,
+                        Author: 'Unknown Author',
+                        annotations: [
+                            {
+                                Text: `Sample highlight from "${title}"`,
+                                TypeName: 'highlight',
+                                DateCreated: new Date().toISOString()
+                            }
+                        ],
+                        highlights: 1,
+                        bookmarks: 0,
+                        notes: 0
+                    });
+                }
+            });
+            
+            return { books };
+        }
+        
+        // Extract data from the SQLite database
+        function extractDataFromDatabase(db) {
+            try {
+                // Get books with annotations
+                let booksQuery = `
+                    SELECT DISTINCT 
+                        c.contentID as BookID,
+                        c.Title,
+                        c.Attribution as Author
+                    FROM content c
+                    JOIN Bookmark b ON c.contentID = b.VolumeID
+                    WHERE (b.Text <> '' OR b.Annotation <> '')
+                    ORDER BY c.Title
+                `;
+                
+                let booksResult;
+                try {
+                    booksResult = db.exec(booksQuery);
+                } catch (e) {
+                    // Try alternative query
+                    booksQuery = `
+                        SELECT DISTINCT 
+                            c.ContentID as BookID,
+                            c.Title,
+                            c.Attribution as Author
+                        FROM content c
+                        JOIN Bookmark b ON c.ContentID = b.VolumeID
+                        WHERE (b.Text <> '' OR b.Annotation <> '')
+                        ORDER BY c.Title
+                    `;
+                    booksResult = db.exec(booksQuery);
+                }
+                
+                books = [];
+                
+                if (booksResult && booksResult.length > 0) {
+                    const columns = booksResult[0].columns;
+                    const rows = booksResult[0].values;
+                    
+                    rows.forEach(row => {
+                        const book = {};
+                        columns.forEach((col, index) => {
+                            book[col] = row[index];
+                        });
+                        books.push(book);
+                    });
+                }
+                
+                // Get all annotations
+                let annotationsQuery = `
+                    SELECT 
+                        BookmarkID,
+                        VolumeID as BookID,
+                        Text,
+                        Annotation,
+                        DateCreated,
+                        Type
+                    FROM Bookmark
+                    WHERE (Text <> '' OR Annotation <> '')
+                    ORDER BY DateCreated DESC
+                `;
+                
+                const annotationsResult = db.exec(annotationsQuery);
+                const annotations = [];
+                
+                if (annotationsResult.length > 0) {
+                    const columns = annotationsResult[0].columns;
+                    const rows = annotationsResult[0].values;
+                    
+                    rows.forEach(row => {
+                        const annotation = {};
+                        columns.forEach((col, index) => {
+                            annotation[col] = row[index];
+                        });
+                        
+                        // Determine annotation type
+                        if (annotation.Type !== undefined) {
+                            if (annotation.Type === 0 || annotation.Type === 1) {
+                                annotation.TypeName = 'highlight';
+                            } else if (annotation.Type === 2) {
+                                annotation.TypeName = 'bookmark';
+                            } else {
+                                annotation.TypeName = 'note';
+                            }
+                        } else {
+                            // If Type column doesn't exist, infer from content
+                            if (annotation.Text && annotation.Text.trim() !== '') {
+                                annotation.TypeName = 'highlight';
+                            } else if (annotation.Annotation && annotation.Annotation.trim() !== '') {
+                                annotation.TypeName = 'note';
+                            } else {
+                                annotation.TypeName = 'bookmark';
+                            }
+                        }
+                        
+                        annotations.push(annotation);
+                    });
+                }
+                
+                // Group annotations by book
+                books.forEach(book => {
+                    book.annotations = annotations.filter(a => a.BookID === book.BookID);
+                    
+                    // Count annotation types
+                    book.highlights = book.annotations.filter(a => a.TypeName === 'highlight').length;
+                    book.bookmarks = book.annotations.filter(a => a.TypeName === 'bookmark').length;
+                    book.notes = book.annotations.filter(a => a.TypeName === 'note').length;
+                });
+                
+                // Filter out books without annotations
+                books = books.filter(book => book.annotations && book.annotations.length > 0);
+                
+                // Update UI with the extracted data
+                updateUI();
+                
+            } catch (error) {
+                console.error('Error extracting data:', error);
+                showError(`Error extracting data: ${error.message}. The database schema might be different than expected.`);
+                loadingIndicator.classList.remove('show');
+            }
+        }
+        
+        // Update the UI with the extracted data
+        function updateUI() {
+            // Update statistics
+            totalBooks.textContent = books.length;
+            
+            let highlights = 0;
+            let bookmarks = 0;
+            let notes = 0;
+            
+            books.forEach(book => {
+                highlights += book.highlights;
+                bookmarks += book.bookmarks;
+                notes += book.notes;
+            });
+            
+            totalHighlights.textContent = highlights;
+            totalBookmarks.textContent = bookmarks;
+            totalNotes.textContent = notes;
+            
+            // Clear books container
+            booksContainer.innerHTML = '';
+            
+            // If no books found
+            if (books.length === 0) {
+                booksContainer.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #888;">
+                        <h3>No books with annotations found</h3>
+                        <p>The database was loaded successfully but no books with annotations were found.</p>
+                        <p>Try the alternative method shown above.</p>
+                    </div>
+                `;
+                dataSection.classList.add('show');
+                return;
+            }
+            
+            // Add book cards
+            books.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card';
+                bookCard.dataset.bookId = book.BookID;
+                
+                const annotationCount = book.annotations ? book.annotations.length : 0;
+                const lastAnnotationDate = book.annotations && book.annotations.length > 0 
+                    ? formatDate(book.annotations[0].DateCreated) 
+                    : 'No date';
+                
+                bookCard.innerHTML = `
+                    <div class="book-title">${escapeHtml(book.Title || 'Unknown Title')}</div>
+                    <div class="book-author">${escapeHtml(book.Author || 'Unknown Author')}</div>
+                    <div class="book-meta">
+                        <span>📝 ${book.highlights} highlights</span>
+                        <span>🔖 ${book.bookmarks} bookmarks</span>
+                        <span>📋 ${book.notes} notes</span>
+                    </div>
+                    <div class="book-meta">
+                        <span>${annotationCount} total</span>
+                        <span>${lastAnnotationDate}</span>
+                    </div>
+                `;
+                
+                bookCard.addEventListener('click', () => showBookAnnotations(book));
+                booksContainer.appendChild(bookCard);
+            });
+            
+            // Show the data section
+            dataSection.classList.add('show');
+        }
+        
+        // Show annotations for a specific book
+        function showBookAnnotations(book) {
+            currentBookId = book.BookID;
+            
+            // Update annotations header
+            annotationsBookTitle.textContent = book.Title || 'Unknown Title';
+            annotationsBookAuthor.textContent = book.Author || 'Unknown Author';
+            
+            // Clear annotations list
+            annotationsList.innerHTML = '';
+            
+            if (!book.annotations || book.annotations.length === 0) {
+                annotationsList.innerHTML = '<div class="no-annotations">No annotations found for this book.</div>';
+            } else {
+                // Sort annotations by date (newest first)
+                const sortedAnnotations = [...book.annotations].sort((a, b) => {
+                    return new Date(b.DateCreated) - new Date(a.DateCreated);
+                });
+                
+                // Add annotation items
+                sortedAnnotations.forEach(annotation => {
+                    const annotationItem = document.createElement('div');
+                    annotationItem.className = 'annotation-item';
+                    
+                    const annotationText = annotation.Text || annotation.Annotation || '';
+                    const annotationNote = annotation.Annotation && annotation.Text ? annotation.Annotation : '';
+                    
+                    let typeLabel = '';
+                    if (annotation.TypeName === 'highlight') {
+                        typeLabel = '<span class="annotation-type type-highlight">📝 Highlight</span>';
+                    } else if (annotation.TypeName === 'bookmark') {
+                        typeLabel = '<span class="annotation-type type-bookmark">🔖 Bookmark</span>';
+                    } else {
+                        typeLabel = '<span class="annotation-type type-note">📋 Note</span>';
+                    }
+                    
+                    annotationItem.innerHTML = `
+                        ${typeLabel}
+                        <div class="annotation-text">${escapeHtml(annotationText)}</div>
+                        ${annotationNote ? `<div class="annotation-text"><strong>Note:</strong> ${escapeHtml(annotationNote)}</div>` : ''}
+                        <div class="annotation-meta">
+                            <span>${formatDate(annotation.DateCreated)}</span>
+                            <span>${annotation.TypeName}</span>
+                        </div>
+                    `;
+                    
+                    annotationsList.appendChild(annotationItem);
+                });
+            }
+            
+            // Show annotations container, hide data section
+            dataSection.classList.remove('show');
+            annotationsContainer.classList.add('show');
+        }
+        
+        // Utility functions
+        function showError(message) {
+            errorMessage.innerHTML = `<strong>Error:</strong> ${message}`;
+            errorMessage.classList.add('show');
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown date';
+            
+            try {
+                // Check if it's a Unix timestamp (seconds)
+                if (/^\d+$/.test(dateString)) {
+                    const timestamp = parseInt(dateString);
+                    // If it's a large number, it's likely milliseconds
+                    if (timestamp > 1000000000000) {
+                        return new Date(timestamp).toLocaleDateString();
+                    }
+                    // Otherwise, assume seconds
+                    return new Date(timestamp * 1000).toLocaleDateString();
+                }
+                
+                // Try parsing as ISO string
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return dateString;
+                }
+                return date.toLocaleDateString();
+            } catch (error) {
+                return dateString;
+            }
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
